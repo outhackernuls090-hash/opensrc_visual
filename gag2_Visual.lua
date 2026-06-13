@@ -10,8 +10,25 @@ local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local PacketRemote = ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Packet"):WaitForChild("RemoteEvent")
-local Inventory = Player:WaitForChild("Inventory")
+
+local PacketRemote
+local success, err = pcall(function()
+    PacketRemote = ReplicatedStorage:WaitForChild("SharedModules", 10):WaitForChild("Packet", 10):WaitForChild("RemoteEvent", 10)
+end)
+if not success or not PacketRemote then
+    warn("PacketRemote not found, some features may be disabled")
+    PacketRemote = nil
+end
+
+local Inventory
+for i = 1, 30 do
+    Inventory = Player:FindFirstChild("Inventory")
+    if Inventory then break end
+    task.wait(1)
+end
+if not Inventory then
+    warn("Inventory not found, auto-sell features disabled")
+end
 
 local SeedList = {"Carrot", "Strawberry", "Blueberry", "Tulip", "Tomato", "Apple", "Bamboo", "Corn", "Cactus", "Pineapple", "Mushroom", "Green Bean", "Banana", "Grape", "Coconut", "Mango", "Dragon Fruit", "Acorn", "Cherry", "Sunflower", "Venus Fly Trap", "Pomegranate", "Poison Apple", "Moon Bloom", "Dragon's Breath", "Ghost Pepper", "Poison Ivy", "Baby Cactus", "Glow Mushroom", "Romanesco", "Horned Melon"}
 local GearList = {"Common Watering Can", "Common Sprinkler", "Sign", "Lantern", "Wheelbarrow", "Uncommon Sprinkler", "Rare Sprinkler", "Legendary Sprinkler", "Super Sprinkler", "Trowel", "Speed Mushroom", "Jump Mushroom", "Gnome", "Shrink Mushroom", "Supersize Mushroom", "Invisibility Mushroom", "Teleporter", "Super Watering Can", "Basic Pot", "Flashbang"}
@@ -114,18 +131,44 @@ local function SetNoclip(enabled)
     end
 end
 
+local LastPacketTime = 0
+local PacketCooldown = 0.15
+
 local function SendPacket(data)
+    if not PacketRemote then
+        return false, "PacketRemote not available"
+    end
+    
+    local currentTime = tick()
+    if currentTime - LastPacketTime < PacketCooldown then
+        task.wait(PacketCooldown - (currentTime - LastPacketTime))
+    end
+    
     local success, err = pcall(function()
+        if type(data) ~= "string" then
+            error("Invalid packet data type")
+        end
         PacketRemote:FireServer(buffer.fromstring(data))
     end)
-    return success
+    
+    LastPacketTime = tick()
+    return success, err
 end
 
 local function GetCharacter()
-    Character = Player.Character or Player.CharacterAdded:Wait()
-    Humanoid = Character:WaitForChild("Humanoid")
-    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-    return Character, Humanoid, HumanoidRootPart
+    if not Player.Character then
+        Player.CharacterAdded:Wait()
+    end
+    Character = Player.Character
+    if not Character then return nil, nil, nil end
+    
+    local hum = Character:FindFirstChild("Humanoid")
+    local hrp = Character:FindFirstChild("HumanoidRootPart")
+    
+    if hum then Humanoid = hum end
+    if hrp then HumanoidRootPart = hrp end
+    
+    return Character, hum, hrp
 end
 
 local function Notify(title, content, icon, duration)
@@ -157,7 +200,7 @@ MainTab:Toggle({
             Threads.SpeedHack = task.spawn(function()
                 while States.SpeedHack do
                     local char, hum = GetCharacter()
-                    if hum then
+                    if hum and hum.Parent then
                         hum.WalkSpeed = States.SpeedValue or 32
                     end
                     task.wait(0.1)
@@ -194,7 +237,7 @@ MainTab:Toggle({
             Threads.JumpPower = task.spawn(function()
                 while States.JumpPower do
                     local char, hum = GetCharacter()
-                    if hum then
+                    if hum and hum.Parent then
                         hum.JumpPower = States.JumpValue or 75
                     end
                     task.wait(0.1)
@@ -232,7 +275,7 @@ MainTab:Toggle({
                 while States.InfiniteJump do
                     if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
                         local char, hum = GetCharacter()
-                        if hum then
+                        if hum and hum.Parent then
                             hum:ChangeState(Enum.HumanoidStateType.Jumping)
                         end
                     end
@@ -359,12 +402,13 @@ FarmingTab:Toggle({
                             for _, descendant in pairs(plot:GetDescendants()) do
                                 if descendant.Name == "HarvestPart" and descendant:IsA("BasePart") then
                                     local char, hum, hrp = GetCharacter()
-                                    if hrp then
+                                    if hrp and hrp.Parent then
                                         if (hrp.Position - descendant.Position).Magnitude > 5 then
                                             local tween = TweenService:Create(hrp, TweenInfo.new(0.08, Enum.EasingStyle.Linear), {CFrame = descendant.CFrame})
                                             tween:Play()
                                             tween.Completed:Wait()
                                         end
+                                        task.wait(math.random(3, 8) / 100)
                                         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                                         task.wait(0.05)
                                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -406,12 +450,13 @@ FarmingTab:Toggle({
                                 if descendant.Name == "PlantPart" or descendant.Name == "Soil" then
                                     if descendant:IsA("BasePart") then
                                         local char, hum, hrp = GetCharacter()
-                                        if hrp then
+                                        if hrp and hrp.Parent then
                                             if (hrp.Position - descendant.Position).Magnitude > 5 then
                                                 local tween = TweenService:Create(hrp, TweenInfo.new(0.08, Enum.EasingStyle.Linear), {CFrame = descendant.CFrame})
                                                 tween:Play()
                                                 tween.Completed:Wait()
                                             end
+                                            task.wait(math.random(3, 8) / 100)
                                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                                             task.wait(0.05)
                                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -453,12 +498,13 @@ FarmingTab:Toggle({
                                 if descendant.Name == "WaterPart" or descendant.Name == "Plant" then
                                     if descendant:IsA("BasePart") then
                                         local char, hum, hrp = GetCharacter()
-                                        if hrp then
+                                        if hrp and hrp.Parent then
                                             if (hrp.Position - descendant.Position).Magnitude > 5 then
                                                 local tween = TweenService:Create(hrp, TweenInfo.new(0.08, Enum.EasingStyle.Linear), {CFrame = descendant.CFrame})
                                                 tween:Play()
                                                 tween.Completed:Wait()
                                             end
+                                            task.wait(math.random(3, 8) / 100)
                                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                                             task.wait(0.05)
                                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -497,12 +543,13 @@ FarmingTab:Toggle({
                                 if descendant.Name == "FertilizePart" or descendant.Name == "FertilizerSpot" then
                                     if descendant:IsA("BasePart") then
                                         local char, hum, hrp = GetCharacter()
-                                        if hrp then
+                                        if hrp and hrp.Parent then
                                             if (hrp.Position - descendant.Position).Magnitude > 5 then
                                                 local tween = TweenService:Create(hrp, TweenInfo.new(0.08, Enum.EasingStyle.Linear), {CFrame = descendant.CFrame})
                                                 tween:Play()
                                                 tween.Completed:Wait()
                                             end
+                                            task.wait(math.random(3, 8) / 100)
                                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                                             task.wait(0.05)
                                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -544,10 +591,11 @@ FarmingTab:Toggle({
                             for _, descendant in pairs(plot:GetDescendants()) do
                                 if descendant.Name == "HarvestPart" and descendant:IsA("BasePart") then
                                     local char, hum, hrp = GetCharacter()
-                                    if hrp then
+                                    if hrp and hrp.Parent then
                                         local tween = TweenService:Create(hrp, TweenInfo.new(0.08, Enum.EasingStyle.Linear), {CFrame = descendant.CFrame})
                                         tween:Play()
                                         tween.Completed:Wait()
+                                        task.wait(math.random(3, 8) / 100)
                                         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                                         task.wait(0.05)
                                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -560,10 +608,11 @@ FarmingTab:Toggle({
                                 if descendant.Name == "PlantPart" or descendant.Name == "Soil" then
                                     if descendant:IsA("BasePart") then
                                         local char, hum, hrp = GetCharacter()
-                                        if hrp then
+                                        if hrp and hrp.Parent then
                                             local tween = TweenService:Create(hrp, TweenInfo.new(0.08, Enum.EasingStyle.Linear), {CFrame = descendant.CFrame})
                                             tween:Play()
                                             tween.Completed:Wait()
+                                            task.wait(math.random(3, 8) / 100)
                                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                                             task.wait(0.05)
                                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -577,10 +626,11 @@ FarmingTab:Toggle({
                                 if descendant.Name == "WaterPart" or descendant.Name == "Plant" then
                                     if descendant:IsA("BasePart") then
                                         local char, hum, hrp = GetCharacter()
-                                        if hrp then
+                                        if hrp and hrp.Parent then
                                             local tween = TweenService:Create(hrp, TweenInfo.new(0.08, Enum.EasingStyle.Linear), {CFrame = descendant.CFrame})
                                             tween:Play()
                                             tween.Completed:Wait()
+                                            task.wait(math.random(3, 8) / 100)
                                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                                             task.wait(0.05)
                                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -628,10 +678,14 @@ AutoBuyTab:Toggle({
                 while States.AutoBuySeeds do
                     for _, name in pairs(SeedList) do
                         if not States.AutoBuySeeds then break end
-                        SendPacket("g\000" .. string.char(#name) .. name)
-                        task.wait(0.1)
+                        local success, err = SendPacket("g\000" .. string.char(#name) .. name)
+                        if not success then
+                            warn("Packet failed: " .. tostring(err))
+                            task.wait(1)
+                        end
+                        task.wait(0.2)
                     end
-                    task.wait(0.5)
+                    task.wait(1)
                 end
             end)
         else
@@ -662,8 +716,12 @@ AutoBuyTab:Toggle({
             Threads.AutoBuySelectedSeed = task.spawn(function()
                 while States.AutoBuySelectedSeed do
                     local selected = States.SelectedSeed or SeedList[1]
-                    SendPacket("g\000" .. string.char(#selected) .. selected)
-                    task.wait(0.2)
+                    local success, err = SendPacket("g\000" .. string.char(#selected) .. selected)
+                    if not success then
+                        warn("Packet failed: " .. tostring(err))
+                        task.wait(1)
+                    end
+                    task.wait(0.3)
                 end
             end)
         else
@@ -687,10 +745,14 @@ AutoBuyTab:Toggle({
                 while States.AutoBuyGear do
                     for _, name in pairs(GearList) do
                         if not States.AutoBuyGear then break end
-                        SendPacket("g\000" .. string.char(#name) .. name)
-                        task.wait(0.1)
+                        local success, err = SendPacket("g\000" .. string.char(#name) .. name)
+                        if not success then
+                            warn("Packet failed: " .. tostring(err))
+                            task.wait(1)
+                        end
+                        task.wait(0.2)
                     end
-                    task.wait(0.5)
+                    task.wait(1)
                 end
             end)
         else
@@ -721,8 +783,12 @@ AutoBuyTab:Toggle({
             Threads.AutoBuySelectedGear = task.spawn(function()
                 while States.AutoBuySelectedGear do
                     local selected = States.SelectedGear or GearList[1]
-                    SendPacket("g\000" .. string.char(#selected) .. selected)
-                    task.wait(0.2)
+                    local success, err = SendPacket("g\000" .. string.char(#selected) .. selected)
+                    if not success then
+                        warn("Packet failed: " .. tostring(err))
+                        task.wait(1)
+                    end
+                    task.wait(0.3)
                 end
             end)
         else
@@ -745,9 +811,12 @@ AutoBuyTab:Toggle({
             Threads.AutoSell = task.spawn(function()
                 while States.AutoSell do
                     if Inventory and #Inventory:GetChildren() > 0 then
-                        SendPacket("\153\000\024")
+                        local success, err = SendPacket("\153\000\024")
+                        if not success then
+                            warn("Sell packet failed: " .. tostring(err))
+                        end
                     end
-                    task.wait(0.5)
+                    task.wait(1)
                 end
             end)
         else
@@ -791,12 +860,19 @@ MiscTab:Button({
     Callback = function()
         local HttpService = game:GetService("HttpService")
         local TeleportService = game:GetService("TeleportService")
-        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        for _, server in pairs(servers.data) do
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Player)
-                break
+        local success, result = pcall(function()
+            return game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+        end)
+        if success then
+            local servers = HttpService:JSONDecode(result)
+            for _, server in pairs(servers.data) do
+                if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Player)
+                    break
+                end
             end
+        else
+            Notify("Error", "Failed to get server list", "x")
         end
     end,
 })
@@ -808,17 +884,24 @@ MiscTab:Button({
     Callback = function()
         local HttpService = game:GetService("HttpService")
         local TeleportService = game:GetService("TeleportService")
-        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local lowest = nil
-        for _, server in pairs(servers.data) do
-            if server.id ~= game.JobId then
-                if not lowest or server.playing < lowest.playing then
-                    lowest = server
+        local success, result = pcall(function()
+            return game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+        end)
+        if success then
+            local servers = HttpService:JSONDecode(result)
+            local lowest = nil
+            for _, server in pairs(servers.data) do
+                if server.id ~= game.JobId then
+                    if not lowest or server.playing < lowest.playing then
+                        lowest = server
+                    end
                 end
             end
-        end
-        if lowest then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, lowest.id, Player)
+            if lowest then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, lowest.id, Player)
+            end
+        else
+            Notify("Error", "Failed to get server list", "x")
         end
     end,
 })
@@ -954,10 +1037,10 @@ Threads.StatsUpdater = task.spawn(function()
         local statsText = string.format(
             "Player: %s\nHealth: %d/%d\nWalk Speed: %d\nJump Power: %d\nInventory Items: %d\nGarden Plots: %d\nServer Players: %d/%d",
             Player.DisplayName,
-            hum and math.floor(hum.Health) or 0,
-            hum and math.floor(hum.MaxHealth) or 0,
-            hum and math.floor(hum.WalkSpeed) or 0,
-            hum and math.floor(hum.JumpPower) or 0,
+            hum and hum.Parent and math.floor(hum.Health) or 0,
+            hum and hum.Parent and math.floor(hum.MaxHealth) or 0,
+            hum and hum.Parent and math.floor(hum.WalkSpeed) or 0,
+            hum and hum.Parent and math.floor(hum.JumpPower) or 0,
             inventoryCount,
             gardenCount,
             #Players:GetPlayers(),
@@ -1014,4 +1097,6 @@ Player.CharacterAdded:Connect(function(newChar)
     end
 end)
 
-Notify("Eternal Hub", "Loaded successfully! Press RightShift to toggle.", "infinity", 5)
+task.delay(2, function()
+    Notify("Eternal Hub", "Loaded successfully! Press RightShift to toggle.", "infinity", 5)
+end)
