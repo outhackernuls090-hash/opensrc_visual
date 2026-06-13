@@ -1,4 +1,15 @@
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+local WindUI_Source = game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
+local WindUI_Load = loadstring(WindUI_Source)
+if not WindUI_Load then
+    warn("Failed to load WindUI library! Source length: " .. #WindUI_Source)
+    warn("First 200 chars: " .. WindUI_Source:sub(1, 200))
+    return
+end
+local WindUI = WindUI_Load()
+if not WindUI then
+    warn("WindUI loaded but returned nil")
+    return
+end
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
