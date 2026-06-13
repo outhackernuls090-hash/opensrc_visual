@@ -1421,7 +1421,7 @@ EventsTab:Slider({
     end,
 })
 
-EventsTab:Section({ Title = "Pets", Icon = "cat" })
+EventsTab:Section({ Title = "Pets",  Icon = "cat" })
 
 EventsTab:Toggle({
     Title = "Auto Hatch Pet",
