@@ -10,13 +10,29 @@ local VOIDUI_URL = "https://raw.githubusercontent.com/outhackernuls090-hash/Void
 local BASE_URL = "https://raw.githubusercontent.com/outhackernuls090-hash/opensrc_visual/refs/heads/main/Arasaka/"
 local CACHE_BUST = "?t=" .. tostring(math.floor(tick()))
 
-local FONT_SHIM = table.concat({
+local PREAMBLE = table.concat({
     "if not Font or type(Font.fromEnum) ~= \"function\" then",
     "    Font = Font or {}",
     "    Font.fromEnum = function(e) return e end",
     "end",
+    "local __safeFromHex = function(v)",
+    "    if type(v) == \"string\" then",
+    "        local ok, r = pcall(Color3.fromHex, v)",
+    "        if ok then return r end",
+    "        return Color3.new(0, 0, 0)",
+    "    end",
+    "    if type(v) == \"userdata\" or type(v) == \"table\" then",
+    "        return v",
+    "    end",
+    "    return Color3.new(0, 0, 0)",
+    "end",
     ""
 }, "\n")
+
+local function patchVoidUI(source)
+    source = string.gsub(source, "Color3%.fromHex", "__safeFromHex")
+    return PREAMBLE .. source
+end
 
 local function fetchRemote(path)
     local ok, source = pcall(function()
@@ -45,7 +61,8 @@ task.spawn(function()
     end)
 
     if ok and type(voidSource) == "string" then
-        local chunk, parseErr = loadstring(FONT_SHIM .. voidSource)
+        local patched = patchVoidUI(voidSource)
+        local chunk, parseErr = loadstring(patched)
         if chunk then
             local success, result = pcall(chunk)
             if success and type(result) == "table" then
