@@ -64,12 +64,12 @@ task.spawn(function()
         local patched = patchVoidUI(voidSource)
         local chunk, parseErr = loadstring(patched)
         if chunk then
-            local success, result = pcall(chunk)
+            local success, result = xpcall(chunk, debug.traceback)
             if success and type(result) == "table" then
                 getgenv().VoidUI = result
                 print("[Arasaka] VoidUI loaded")
             else
-                warn("[Arasaka] VoidUI runtime error: " .. tostring(result))
+                warn("[Arasaka] VoidUI runtime error:\n" .. tostring(result))
             end
         else
             warn("[Arasaka] VoidUI parse error: " .. tostring(parseErr))
