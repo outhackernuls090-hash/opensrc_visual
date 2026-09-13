@@ -4,10 +4,8 @@ local Network = ReplicatedStorage:WaitForChild("Network")
 local workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local vim = game:GetService("VirtualInputManager")
-local CoreGui = game:GetService("CoreGui")
 
 getgenv().Arasaka_IsRunning = true
 
@@ -15,6 +13,47 @@ local VoidUI = getgenv().VoidUI
 if not VoidUI then
     warn("[Arasaka] VoidUI not loaded")
     return
+end
+
+do
+    local colorKeys = {
+        "Accent", "AccentGlow", "Background", "BackgroundElevated", "Surface",
+        "SurfaceHover", "Border", "Text", "TextDim", "TextMuted", "Success",
+        "Warning", "Danger", "Scrollbar"
+    }
+    for _, theme in pairs(VoidUI.Themes) do
+        for _, key in ipairs(colorKeys) do
+            local v = theme[key]
+            if type(v) == "string" and v:sub(1, 1) == "#" then
+                theme[key] = Color3.fromHex(v)
+            end
+        end
+    end
+
+    VoidUI.Themes.Arasaka = {
+        Name = "Arasaka",
+        Accent             = Color3.fromRGB(230, 55, 70),
+        AccentGlow         = Color3.fromRGB(255, 111, 124),
+        Background         = Color3.fromRGB(10, 10, 13),
+        BackgroundElevated = Color3.fromRGB(18, 18, 23),
+        Surface            = Color3.fromRGB(26, 26, 32),
+        SurfaceHover       = Color3.fromRGB(35, 35, 41),
+        Border             = Color3.fromRGB(44, 44, 52),
+        Text               = Color3.fromRGB(241, 241, 244),
+        TextDim            = Color3.fromRGB(144, 144, 153),
+        TextMuted          = Color3.fromRGB(90, 90, 99),
+        Success            = Color3.fromRGB(63, 185, 80),
+        Warning            = Color3.fromRGB(210, 153, 34),
+        Danger             = Color3.fromRGB(230, 55, 70),
+        Scrollbar          = Color3.fromRGB(44, 44, 52),
+        Radius             = 10,
+        RadiusSmall        = 6,
+        RadiusLarge        = 14,
+        HeaderHeight       = 50,
+        SidebarWidth       = 200,
+        WindowWidth        = 640,
+        WindowHeight       = 460
+    }
 end
 
 local SaveModule
@@ -141,8 +180,7 @@ if not getgenv().Arasaka_AntiAFK_Setup then
     end)
 end
 
-local Library, RankCmds, PlayerPet
-pcall(function() Library = require(ReplicatedStorage:WaitForChild("Library")) end)
+local RankCmds, PlayerPet
 pcall(function() RankCmds = require(ReplicatedStorage:WaitForChild("Library"):WaitForChild("Client"):WaitForChild("RankCmds")) end)
 pcall(function() PlayerPet = require(ReplicatedStorage:WaitForChild("Library"):WaitForChild("Client"):WaitForChild("PlayerPet")) end)
 
@@ -773,7 +811,7 @@ local function GetActiveRankQuests()
                         maxNum = n and tonumber(n) or 1
                     end
                     local remaining = math.max(1, maxNum - prog)
-                    table.insert(quests, { txt = text, remaining = remaining, raw = titleLbl.Text, ignored = false })
+                    table.insert(quests, { txt = text, remaining = remaining, raw = titleLbl.Text, ignored = false, prog = prog })
                 end
             end
         end
@@ -844,21 +882,15 @@ local currentRankFruitIndex = 1
 local lastRankFruitProgress = -1
 local ROMAN_MAP = { i = 1, ii = 2, iii = 3, iv = 4, v = 5, vi = 6, vii = 7, viii = 8, ix = 9, x = 10 }
 
-local userId = player.UserId
-local thumbType = Enum.ThumbnailType.HeadShot
-local thumbSize = Enum.ThumbnailSize.Size420x420
-local avatarImage = game:GetService("Players"):GetUserThumbnailAsync(userId, thumbType, thumbSize)
-
 local UI = VoidUI.new({
     Name = "Arasaka",
-    Theme = "Crimson",
-    Accent = Color3.fromRGB(230, 55, 70)
+    Theme = "Arasaka"
 })
 
 local Window = UI:CreateWindow({
     Title = "Arasaka Corp",
     Icon = "Home",
-    Size = UDim2.fromOffset(620, 440),
+    Size = UDim2.fromOffset(640, 460),
     Position = UDim2.fromScale(0.5, 0.5)
 })
 
@@ -1512,7 +1544,8 @@ task.spawn(function()
                             end
                         end
                     else
-                        local tN = (getgenv().AutoTapMode == "Random") and vt[math.random(1, #vt)].n or (table.sort(vt, function(a, b) return a.d < b.d end) and vt[1].n or vt[1].n)
+                        table.sort(vt, function(a, b) return a.d < b.d end)
+                        local tN = (getgenv().AutoTapMode == "Random") and vt[math.random(1, #vt)].n or vt[1].n
                         if tN and tN.Name then
                             pcall(function() Network:FindFirstChild("Breakables_PlayerDealDamage"):FireServer(tN.Name) end)
                         end
@@ -1600,7 +1633,9 @@ task.spawn(function()
                 if cE < getgenv().TargetEggSlots then
                     local allowed = 0
                     pcall(function()
-                        allowed = RankCmds.GetEggSlotsBeforeRank(cR)
+                        if RankCmds and RankCmds.GetEggSlotsBeforeRank then
+                            allowed = RankCmds.GetEggSlotsBeforeRank(cR)
+                        end
                         local rD = require(ReplicatedStorage.Library.Directory.Ranks)[cR]
                         if rD and rD.UnlockableEggSlots then allowed = allowed + rD.UnlockableEggSlots end
                     end)
@@ -1643,7 +1678,8 @@ task.spawn(function()
             if tEgg then
                 isHatching = true
                 if Toggles.HatchBest then
-                    local cZ, bZ = getCurrentAreaNumber(), getHighestUnlockedZoneNumAndInst()
+                    local cZ = getCurrentAreaNumber()
+                    local bZ = getHighestUnlockedZoneNumAndInst()
                     if cZ ~= bZ then
                         getgenv().IsMachineActionActive = true
                         forceTeleportToBestZone()
@@ -1921,7 +1957,7 @@ task.spawn(function()
                                     end
                                 end)
                             end
-                            local pId, uSC = game.PlaceId, HAS_SUPER_COMPUTER and (game.PlaceId == 16498369169 or game.PlaceId == 17503543197 or game.PlaceId == 140403681187145 or game.PlaceId == 17720827393)
+                            local uSC = HAS_SUPER_COMPUTER and (game.PlaceId == 16498369169 or game.PlaceId == 17503543197 or game.PlaceId == 140403681187145 or game.PlaceId == 17720827393)
                             if tR > 0 then
                                 local cQ, cR = {}, q.remaining
                                 table.sort(gP, function(a, b) return a.crafts > b.crafts end)
@@ -2094,6 +2130,7 @@ end)
 local originalEggFuncs = {}
 
 local function hookEggAnimations()
+    if type(getgc) ~= "function" then return end
     pcall(function()
         for _, v in pairs(getgc(true)) do
             if type(v) == "table" then
