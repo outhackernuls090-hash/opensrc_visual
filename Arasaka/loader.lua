@@ -10,6 +10,14 @@ local VOIDUI_URL = "https://raw.githubusercontent.com/outhackernuls090-hash/Void
 local BASE_URL = "https://raw.githubusercontent.com/outhackernuls090-hash/opensrc_visual/refs/heads/main/Arasaka/"
 local CACHE_BUST = "?t=" .. tostring(math.floor(tick()))
 
+local FONT_SHIM = table.concat({
+    "if not Font or type(Font.fromEnum) ~= \"function\" then",
+    "    Font = Font or {}",
+    "    Font.fromEnum = function(e) return e end",
+    "end",
+    ""
+}, "\n")
+
 local function fetchRemote(path)
     local ok, source = pcall(function()
         return game:HttpGet(BASE_URL .. path .. CACHE_BUST)
@@ -35,14 +43,22 @@ task.spawn(function()
     local ok, voidSource = pcall(function()
         return game:HttpGet(VOIDUI_URL .. CACHE_BUST)
     end)
-    if ok and voidSource then
-        local chunk = loadstring(voidSource)
+
+    if ok and type(voidSource) == "string" then
+        local chunk, parseErr = loadstring(FONT_SHIM .. voidSource)
         if chunk then
             local success, result = pcall(chunk)
             if success and type(result) == "table" then
                 getgenv().VoidUI = result
+                print("[Arasaka] VoidUI loaded")
+            else
+                warn("[Arasaka] VoidUI runtime error: " .. tostring(result))
             end
+        else
+            warn("[Arasaka] VoidUI parse error: " .. tostring(parseErr))
         end
+    else
+        warn("[Arasaka] VoidUI fetch failed")
     end
 
     fetchRemote("webhook.lua")
