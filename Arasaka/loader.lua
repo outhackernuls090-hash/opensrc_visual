@@ -7,7 +7,7 @@ getgenv().Arasaka = {
 }
 
 local VOIDUI_URL = "https://raw.githubusercontent.com/outhackernuls090-hash/VoidUI/refs/heads/main/VoidUI.lua"
-local BASE_URL = ""
+local BASE_URL = "https://raw.githubusercontent.com/outhackernuls090-hash/opensrc_visual/refs/heads/main/Arasaka/"
 local CACHE_BUST = "?t=" .. tostring(math.floor(tick()))
 
 local function fetchRemote(path)
