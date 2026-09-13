@@ -851,7 +851,7 @@ local avatarImage = game:GetService("Players"):GetUserThumbnailAsync(userId, thu
 
 local UI = VoidUI.new({
     Name = "Arasaka",
-    Theme = "Arasaka",
+    Theme = "Crimson",
     Accent = Color3.fromRGB(230, 55, 70)
 })
 
