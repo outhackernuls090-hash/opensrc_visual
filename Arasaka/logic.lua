@@ -56,6 +56,18 @@ do
     }
 end
 
+local UI = VoidUI.new({
+    Name = "Arasaka",
+    Theme = "Arasaka"
+})
+
+local Window = UI:CreateWindow({
+    Title = "Arasaka Corp",
+    Icon = "Home",
+    Size = UDim2.fromOffset(640, 460),
+    Position = UDim2.fromScale(0.5, 0.5)
+})
+
 local SaveModule
 pcall(function()
     SaveModule = require(ReplicatedStorage:WaitForChild("Library"):WaitForChild("Client"):WaitForChild("Save"))
@@ -881,18 +893,6 @@ local rankFruitList = { "Rainbow Fruit", "Watermelon", "Pineapple", "Orange", "B
 local currentRankFruitIndex = 1
 local lastRankFruitProgress = -1
 local ROMAN_MAP = { i = 1, ii = 2, iii = 3, iv = 4, v = 5, vi = 6, vii = 7, viii = 8, ix = 9, x = 10 }
-
-local UI = VoidUI.new({
-    Name = "Arasaka",
-    Theme = "Arasaka"
-})
-
-local Window = UI:CreateWindow({
-    Title = "Arasaka Corp",
-    Icon = "Home",
-    Size = UDim2.fromOffset(640, 460),
-    Position = UDim2.fromScale(0.5, 0.5)
-})
 
 UI:Notify({ Title = "Arasaka", Description = "Loaded successfully.", Type = "Success" })
 
