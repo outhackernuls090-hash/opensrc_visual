@@ -30,35 +30,11 @@ do
         end
     end
 
-    VoidUI.Themes.Arasaka = {
-        Name = "Arasaka",
-        Accent             = Color3.fromRGB(230, 55, 70),
-        AccentGlow         = Color3.fromRGB(255, 111, 124),
-        Background         = Color3.fromRGB(10, 10, 13),
-        BackgroundElevated = Color3.fromRGB(18, 18, 23),
-        Surface            = Color3.fromRGB(26, 26, 32),
-        SurfaceHover       = Color3.fromRGB(35, 35, 41),
-        Border             = Color3.fromRGB(44, 44, 52),
-        Text               = Color3.fromRGB(241, 241, 244),
-        TextDim            = Color3.fromRGB(144, 144, 153),
-        TextMuted          = Color3.fromRGB(90, 90, 99),
-        Success            = Color3.fromRGB(63, 185, 80),
-        Warning            = Color3.fromRGB(210, 153, 34),
-        Danger             = Color3.fromRGB(230, 55, 70),
-        Scrollbar          = Color3.fromRGB(44, 44, 52),
-        Radius             = 10,
-        RadiusSmall        = 6,
-        RadiusLarge        = 14,
-        HeaderHeight       = 50,
-        SidebarWidth       = 200,
-        WindowWidth        = 640,
-        WindowHeight       = 460
-    }
 end
 
 local UI = VoidUI.new({
     Name = "Arasaka",
-    Theme = "Arasaka"
+    Theme = "Crimson"
 })
 
 local Window = UI:CreateWindow({
