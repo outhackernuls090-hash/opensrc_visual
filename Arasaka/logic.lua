@@ -34,7 +34,7 @@ end
 
 local UI = VoidUI.new({
     Name = "Arasaka",
-    Theme = "Midnight"
+    Theme = "Arasaka"
 })
 
 local Window = UI:CreateWindow({
